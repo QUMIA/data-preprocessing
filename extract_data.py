@@ -4,16 +4,19 @@
 
 import pandas as pd
 import pyreadstat
+
 import hashlib
+import binascii
 
 
 def read_file(path):
     return pd.read_spss(path)
 
 def anonymize_id(row, salt):
-    salted_id = str(int(row['MDN'])) + '_' + salt
-    print(salted_id, type(salted_id))
-    return 'asdf' #hashlib.pbkdf2_hmac('sha256', salted_id.encode('utf-8'), salt, 100000)
+    patient_id = str(int(row['MDN']))
+    bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
+                               salt.encode('utf-8'), 100000)
+    return binascii.hexlify(bin_hash).decode('utf-8')
 
 def extract_data(df_in):
     anon_columns = ['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'BMI']

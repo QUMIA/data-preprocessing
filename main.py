@@ -25,7 +25,7 @@ def main():
 
     # Replace all patient ids
     def anonymize_it(row):
-        anonymize_id(row, salt)
+        return anonymize_id(row, salt)
     df['anon_id'] = df.apply(anonymize_it, axis=1)
     
     # Extract anonymized data from SPSS data and save it
