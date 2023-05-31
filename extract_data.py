@@ -10,12 +10,15 @@ import binascii
 
 
 def read_file(path):
-    return pd.read_spss(path)
+    df = pd.read_spss(path)
+    # Make patient id 7-character strings
+    df['MDN'] = df['MDN'].astype(int).astype(str).str.zfill(7)
+    return df
 
 def anonymize_id(row, salt):
-    patient_id = str(int(row['MDN']))
+    patient_id = row['MDN']
     bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
-                               salt.encode('utf-8'), 100000)
+                               salt.encode('utf-8'), 100) #TODO 100000
     return binascii.hexlify(bin_hash).decode('utf-8')
 
 def extract_data(df_in):
