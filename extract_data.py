@@ -7,6 +7,7 @@ import pyreadstat
 
 import hashlib
 import binascii
+import glob
 
 
 mapping = {
@@ -43,6 +44,15 @@ def pseudonymize_id(patient_id, salt):
     bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
                                salt.encode('utf-8'), 100) #TODO 100000
     return binascii.hexlify(bin_hash).decode('utf-8')
+
+def get_image_folder_names(row, img_in_dir):
+    patient_id = row['MDN']
+    if 'Date_exam' in row:
+        format_exam_date = row['Date_exam'].strftime('%Y%m%d')
+        pattern = '/'.join([img_in_dir, f'{patient_id}_{format_exam_date}*'])
+    else:
+        pattern = '/'.join([img_in_dir, f'{patient_id}_*'])
+    return glob.glob(pattern)
 
 def create_output_df(data):
     return pd.DataFrame(columns=['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length',
