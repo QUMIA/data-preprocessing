@@ -8,7 +8,7 @@ load_dotenv()  # take environment variables from .env.
 import os
 import glob
 import scipy.io
-from extract_data import read_file, anonymize_id, extract_data, write_file
+from extract_data import read_file, pseudonymize_ids, write_file, create_output_df, get_output_row
 from extract_images import convert_image
 
 def main():
@@ -23,16 +23,18 @@ def main():
     # Read specified SPSS file
     df = read_file(input_file)
 
-    # Pseudonymize patient ids
-    def anonymize_it(row):
-        return anonymize_id(row, salt)
-    df['anon_id'] = df.apply(anonymize_it, axis=1)
+    # Pseudonymize ids (adds column)
+    pseudonymize_ids(df, salt)
+        
+    # To collect output
+    output_rows = []
     
     # Loop through all entries to process
     no_images_count = 0
     count_ambiguous_image_folders = 0
+    missing_muscles = set()
     for index, row in df.iterrows():
-        if index > 9: break # For development, limit the number of entries processed
+        if index > 3: break # For development, limit the number of entries processed
         
         # Determine location of image data
         patient_id = row['MDN']
@@ -63,6 +65,11 @@ def main():
             print(f)
             mat = scipy.io.loadmat(f)
             print(mat['muscle'], mat['side'])
+            
+            # Add an entry to the output table
+            output_rows.append(get_output_row(row, mat['muscle'][0], mat['side'][0], index, missing_muscles))
+            
+            # Convert the image
             file_name = os.path.split(f)[1]
             file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
             file_out = os.path.join(visit_out_dir, f"{str(index).zfill(2)}.png")
@@ -71,10 +78,11 @@ def main():
     
     print(f"Couldn't find images for {no_images_count} of {index} entries")
     print(f"Ambiguous image folders for {count_ambiguous_image_folders} entries")
+    print(f"Missing muscles in mapping: {missing_muscles}")
 
-    # Extract anonymized data from SPSS data and save as csv
-    df_anon = extract_data(df)
-    write_file(output_file, df_anon)
+    # Write collected output data
+    df_out = create_output_df(output_rows)
+    write_file(output_file, df_out)
     print(f"Data written to {output_file}")
     
     
