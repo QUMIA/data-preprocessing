@@ -8,7 +8,7 @@ load_dotenv()  # take environment variables from .env.
 import os
 import glob
 import scipy.io
-from extract_data import read_file, pseudonymize_ids, write_file, create_output_df, get_output_row
+from extract_data import read_file, create_output_df, get_output_row
 from extract_images import convert_image
 
 def main():
@@ -20,23 +20,23 @@ def main():
     salt = os.environ["QU_SALT"]
     print(input_file, output_file, img_in_dir, img_out_dir)
     
-    # Read specified SPSS file
-    df = read_file(input_file)
+    # Read specified SPSS file and does some preprocessing
+    df = read_file(input_file, salt)
 
-    # Pseudonymize ids (adds column)
-    pseudonymize_ids(df, salt)
-        
     # To collect output
     output_rows = []
     
-    # Loop through all entries to process
+    # To record some error information
     no_images_count = 0
     count_ambiguous_image_folders = 0
     missing_muscles = set()
+    count_missing_muscles = 0
+    
+    # Loop through all entries to process
     for index, row in df.iterrows():
         if index > 3: break # For development, limit the number of entries processed
         
-        # Determine location of image data
+        # Determine director of image data (based on patient id and exam date)
         patient_id = row['MDN']
         # TODO handle Date_exam not present?
         format_exam_date = row['Date_exam'].strftime('%Y%m%d')
@@ -64,25 +64,33 @@ def main():
         for f in file_list:
             print(f)
             mat = scipy.io.loadmat(f)
-            print(mat['muscle'], mat['side'])
             
             # Add an entry to the output table
-            output_rows.append(get_output_row(row, mat['muscle'][0], mat['side'][0], index, missing_muscles))
+            muscle = mat['muscle'][0]
+            side = mat['side'][0]
+            row_out = get_output_row(row, muscle, side, index)
             
-            # Convert the image
-            file_name = os.path.split(f)[1]
-            file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
-            file_out = os.path.join(visit_out_dir, f"{str(index).zfill(2)}.png")
-            convert_image(file_in, file_out)
-            index += 1
+            # Check if the muscle was found in SPSS data
+            if row_out != None:
+                output_rows.append(row_out)
+                
+                # Convert the image
+                file_name = os.path.split(f)[1]
+                file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
+                file_out = os.path.join(visit_out_dir, f"{str(index).zfill(2)}.png")
+                convert_image(file_in, file_out)
+                index += 1
+            else:
+                missing_muscles.add(muscle)
+                count_missing_muscles += 1
     
     print(f"Couldn't find images for {no_images_count} of {index} entries")
     print(f"Ambiguous image folders for {count_ambiguous_image_folders} entries")
-    print(f"Missing muscles in mapping: {missing_muscles}")
+    print(f"Missing muscles ({count_missing_muscles}x) in mapping: {missing_muscles}")
 
     # Write collected output data
     df_out = create_output_df(output_rows)
-    write_file(output_file, df_out)
+    df_out.to_csv(output_file, index=False)
     print(f"Data written to {output_file}")
     
     

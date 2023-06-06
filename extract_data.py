@@ -28,36 +28,42 @@ mapping = {
     "Peroneus tertius": "PerT"
 }
 
-def read_file(path):
+def read_file(path, salt):
     df = pd.read_spss(path)
+    
     # Make patient id 7-character strings
     df['MDN'] = df['MDN'].astype(int).astype(str).str.zfill(7)
+    
+    # Pseudonymize ids (adds column)
+    df['anon_id'] = df.apply(lambda row: pseudonymize_id(row['MDN'], salt), axis=1)
+        
     return df
 
-def pseudonymize_ids(df, salt):
-    df['anon_id'] = df.apply(lambda row: pseudonymize_id(row, salt), axis=1)
-
-def pseudonymize_id(row, salt):
-    patient_id = row['MDN']
+def pseudonymize_id(patient_id, salt):
     bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
                                salt.encode('utf-8'), 100) #TODO 100000
     return binascii.hexlify(bin_hash).decode('utf-8')
 
-def write_file(path, df):
-    df.to_csv(path, index=False)
-
 def create_output_df(data):
-    return pd.DataFrame(columns=['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'BMI',
+    return pd.DataFrame(columns=['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length',
                     'muscle', 'side', 'z_score', 'h_score', 'image_index'], data=data)
 
-def get_output_row(row_in, muscle, side, image_index, missing_muscles):
-    muscle_abrev = mapping.get(muscle)
-    if muscle_abrev == None:
-        missing_muscles.add(muscle)
-    anon_columns = ['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'BMI']
-    row_vals = row_in[anon_columns].to_dict()
-    row_vals['muscle'] = muscle_abrev
-    row_vals['side'] = side
-    row_vals['image_index'] = image_index
-    return row_vals
+def get_output_row(row_in, muscle, side, image_index):
+    """ Combines data from
+        * the original row (anonymous id, personal attributes considered anonymous)
+        * the selected muscle + side
+        * the index of the image being written
+        * the H and z score for the selected muscle
+    """
+    muscle_abbrev = mapping.get(muscle)
+    if muscle_abbrev == None:
+        return None
+    anon_columns = ['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length']
+    row_out = row_in[anon_columns].to_dict()
+    row_out['muscle'] = muscle_abbrev
+    row_out['side'] = side
+    row_out['z_score'] = row_in[f'{muscle_abbrev}{side}_z']
+    row_out['h_score'] = row_in[f'{muscle_abbrev}{side}_H']
+    row_out['image_index'] = image_index
+    return row_out
 
