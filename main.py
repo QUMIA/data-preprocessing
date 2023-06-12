@@ -33,11 +33,12 @@ def main():
     count_missing_muscles = 0
     unique_patients = set()
     count_ambiguous_entries = 0
+    count_errors = 0
     
     
     # Loop through all entries to process
     for index, row_in in df.iterrows():
-        if index >= 5: break # For development, limit the number of entries processed
+        if index >= 100: break # For development, limit the number of entries processed
         print("Processing entry", index)
         
         # Check for possible ambiguity
@@ -74,8 +75,13 @@ def main():
             # Get all the information together
             muscle = mat['muscle'][0]
             side = mat['side'][0]
-            row_out = get_output_row(row_in, muscle, side, image_index)
-            
+            try:
+                row_out = get_output_row(row_in, muscle, side, image_index)
+            except Exception as e:
+                print(f"ERROR: {e} while processing {f}")
+                count_errors += 1
+                continue
+                
             # Check if the muscle was found in SPSS data
             if row_out != None:
                 # Add to output data
@@ -95,7 +101,8 @@ def main():
     print(f"Couldn't find images for {no_images_count} of {index} entries")
     print(f"Ambiguous image folders for {count_ambiguous_image_folders} entries")
     print(f"Missing muscles ({count_missing_muscles}x) in mapping: {missing_muscles}")
-    print(f"Found {count_ambiguous_entries} ambiguous entries")
+    print(f"Found {count_ambiguous_entries} ambiguous entries in table (without exam date)")
+    print(f"{count_errors} errors found extracting table data")
     print(f"Converted {len(output_rows)} images from {len(unique_patients)} patients")
     
     # Write collected output data
