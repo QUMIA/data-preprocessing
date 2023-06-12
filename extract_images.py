@@ -19,8 +19,9 @@ def convert_image(file_in, file_out):
     # get image data
     img = ds.pixel_array
     
-    # convert to RGB
+    # convert to RGB, then to grayscale
     img_rgb = convert_color_space(img, 'YBR_FULL_422', 'RGB')
+    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
     
     # retrieve region with actual image data
     region_data = ds[(0x0018, 0x6011)] # Sequence of Ultrasound Regions
@@ -29,10 +30,15 @@ def convert_image(file_in, file_out):
         y0 = get_value_from_sequence(item, (0x0018, 0x601a)) # Region Location Min Y0
         x1 = get_value_from_sequence(item, (0x0018, 0x601c)) # Region Location Min X1
         y1 = get_value_from_sequence(item, (0x0018, 0x601e)) # Region Location Min Y1 
-    # print(x0, y0, x1, y1)
+    
+    # Tighten crop region (clip off as much burnt-in annotations as possible)
+    x0 += 51
+    y0 += 8
+    x1 -= 52
+    y1 -= 65
    
     # crop image to region
-    img_cropped = img_rgb[y0:y1, x0:x1]
+    img_cropped = img_gray[y0:y1, x0:x1]
     
     # write image
     cv2.imwrite(file_out, img_cropped)
