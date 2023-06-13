@@ -37,13 +37,19 @@ def read_file(path, salt):
     
     # Pseudonymize ids (adds column)
     df['anon_id'] = df.apply(lambda row: pseudonymize_id(row['MDN'], salt), axis=1)
-        
+    
+    # Add a separate id for exam
+    df['exam_id'] = df.apply(
+        lambda row: pseudonymize_id(f"{row['MDN']}_{row['Date_exam']}", salt)
+        if 'Date_exam' in row
+        else row['anon_id'], axis=1)
+    
     return df
 
 def pseudonymize_id(patient_id, salt):
     bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
                                salt.encode('utf-8'), 100) #TODO 100000
-    return binascii.hexlify(bin_hash).decode('utf-8')
+    return binascii.hexlify(bin_hash).decode('utf-8')[0:32]
 
 def get_image_folder_names(row, img_in_dir):
     patient_id = row['MDN']
@@ -55,25 +61,26 @@ def get_image_folder_names(row, img_in_dir):
     return glob.glob(pattern)
 
 def create_output_df(data):
-    return pd.DataFrame(columns=['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length',
-                    'muscle', 'side', 'z_score', 'h_score', 'image_index'], data=data)
+    return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length',
+                    'muscle', 'side', 'z_score', 'h_score', 'image_file'], data=data)
 
-def get_output_row(row_in, muscle, side, image_index):
+def get_output_row(row_in, muscle, side, image_file):
     """ Combines data from
         * the original row (anonymous id, personal attributes considered anonymous)
         * the selected muscle + side
-        * the index of the image being written
+        * the file name of the image being written
         * the H and z score for the selected muscle
     """
     muscle_abbrev = mapping.get(muscle)
     if muscle_abbrev == None:
         return None
-    anon_columns = ['anon_id', 'Age_exam', 'Sex', 'Weight', 'Length']
+    # TODO check for z/h-score not empty
+    anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length']
     row_out = row_in[anon_columns].to_dict()
     row_out['muscle'] = muscle_abbrev
     row_out['side'] = side
     row_out['z_score'] = row_in[f'{muscle_abbrev}{side}_z']
     row_out['h_score'] = row_in[f'{muscle_abbrev}{side}_H']
-    row_out['image_index'] = image_index
+    row_out['image_file'] = image_file
     return row_out
 

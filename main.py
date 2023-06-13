@@ -38,7 +38,7 @@ def main():
     
     # Loop through all entries to process
     for index, row_in in df.iterrows():
-        if index >= 100: break # For development, limit the number of entries processed
+        if index >= 10: break # For development, limit the number of entries processed
         print("Processing entry", index)
         
         # Check for possible ambiguity
@@ -61,7 +61,7 @@ def main():
         visit_img_dir = os.path.join(img_in_dir, folder_names[0])
 
         # Create output dir if needed
-        visit_out_dir = os.path.join(img_out_dir, row_in['anon_id'])
+        visit_out_dir = os.path.join(img_out_dir, row_in['exam_id'])
         if not os.path.exists(visit_out_dir):
             os.mkdir(visit_out_dir)
 
@@ -70,13 +70,16 @@ def main():
         file_list.sort()
         image_index = 0
         for f in file_list:
+            # Get data from .mat
             mat = scipy.io.loadmat(f)
-            
-            # Get all the information together
             muscle = mat['muscle'][0]
             side = mat['side'][0]
+            
+            output_image_file = f"{str(image_index).zfill(2)}.png"
+            
+            # Get all the information together
             try:
-                row_out = get_output_row(row_in, muscle, side, image_index)
+                row_out = get_output_row(row_in, muscle, side, output_image_file)
             except Exception as e:
                 print(f"ERROR: {e} while processing {f}")
                 count_errors += 1
@@ -91,7 +94,7 @@ def main():
                 # Convert the image
                 file_name = os.path.split(f)[1]
                 file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
-                file_out = os.path.join(visit_out_dir, f"{str(image_index).zfill(2)}.png")
+                file_out = os.path.join(visit_out_dir, output_image_file)
                 convert_image(file_in, file_out)
                 image_index += 1
             else:
