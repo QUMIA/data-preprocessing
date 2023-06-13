@@ -81,7 +81,7 @@ def main():
             try:
                 row_out = get_output_row(row_in, muscle, side, output_image_file)
             except Exception as e:
-                print(f"ERROR: {e} while processing {f}")
+                print(f"ERROR: {e} while processing {patient_id} {muscle} {side} {f}")
                 count_errors += 1
                 continue
                 

@@ -71,16 +71,26 @@ def get_output_row(row_in, muscle, side, image_file):
         * the file name of the image being written
         * the H and z score for the selected muscle
     """
+    # Map muscle name
     muscle_abbrev = mapping.get(muscle)
     if muscle_abbrev == None:
         return None
-    # TODO check for z/h-score not empty
+    # Obligatory special case
+    if muscle_abbrev == "Geniohyoid":
+        side = "" # ignore the side (it has none in the SPSS file)
+    
+    # H/z-score
+    z_score = row_in[f'{muscle_abbrev}{side}_z']
+    h_score = row_in[f'{muscle_abbrev}{side}_H']
+    if pd.isna(z_score) or pd.isna(h_score):
+        raise Exception("Missing z/h-score")
+    
+    # Copy data
     anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length']
     row_out = row_in[anon_columns].to_dict()
     row_out['muscle'] = muscle_abbrev
     row_out['side'] = side
-    row_out['z_score'] = row_in[f'{muscle_abbrev}{side}_z']
-    row_out['h_score'] = row_in[f'{muscle_abbrev}{side}_H']
+    row_out['z_score'] = z_score
+    row_out['h_score'] = h_score
     row_out['image_file'] = image_file
     return row_out
-
