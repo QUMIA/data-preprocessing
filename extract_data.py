@@ -61,7 +61,7 @@ def get_image_folder_names(row, img_in_dir):
     return glob.glob(pattern)
 
 def create_output_df(data):
-    return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length',
+    return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'Final_diagnosis',
                     'muscle', 'side', 'z_score', 'h_score', 'image_file'], data=data)
 
 def get_output_row(row_in, muscle, side, image_file):
@@ -86,7 +86,7 @@ def get_output_row(row_in, muscle, side, image_file):
         raise Exception("Missing z/h-score")
     
     # Copy data
-    anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length']
+    anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'Final_diagnosis']
     row_out = row_in[anon_columns].to_dict()
     row_out['muscle'] = muscle_abbrev
     row_out['side'] = side
