@@ -40,7 +40,7 @@ def main():
     
     # Loop through all entries to process
     for index, row_in in df.iterrows():
-        #if index >= 100: break # For development, limit the number of entries processed
+        # if index >= 100: break # For development, limit the number of entries processed
         print("Processing entry", index)
         
         # Check for possible ambiguity
@@ -95,6 +95,8 @@ def main():
                 
             # Check if the muscle was found in SPSS data
             if row_out != None:
+                image_index += 1
+
                 # Add to output data
                 output_rows.append(row_out)
                 unique_patients.add(patient_id)
@@ -107,7 +109,6 @@ def main():
                 if not do_skip_img_convert:
                     convert_image(file_in, file_out)
                     count_images_converted += 1
-                    image_index += 1
             else:
                 missing_muscles.add(muscle)
                 count_missing_muscles += 1
