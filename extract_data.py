@@ -29,8 +29,29 @@ mapping = {
     "Peroneus tertius": "PerT"
 }
 
+# This maps the old categories (used in 0-500 file, column "Diagnosis_categorized")
+# to the new categories
+diagnosis_mapping = [0, 99, 5, 1, 5, 5, 5, 2, 3, 3, 4, 3, 5, 5, 99]
+
+# The new category labels (included for completeness)
+diagnosis_labels = {
+    0: "No NMD",
+    1: "spinal muscular atrophies or motor neuron",
+    2: "motor nerve roots",
+    3: "peripheral nerve",
+    4: "neuromuscular transmission",
+    5: "myopathy",
+    6: "Supraspinal tonal regulation/mimics",
+    99: "unknown/uncertain"
+}
+
+sex_mapping = {0: 'male', 1: 'female'}
+
 def read_file(path, salt):
-    df = pd.read_spss(path)
+    df = pd.read_spss(path, convert_categoricals=False)
+    
+    # Use labels for sex
+    df['Sex'] = df['Sex'].astype(int).map(sex_mapping)
     
     # Make patient id 7-character strings
     df['MDN'] = df['MDN'].astype(int).astype(str).str.zfill(7)
@@ -48,7 +69,7 @@ def read_file(path, salt):
 
 def pseudonymize_id(patient_id, salt):
     bin_hash = hashlib.pbkdf2_hmac('sha256', patient_id.encode('utf-8'),
-                               salt.encode('utf-8'), 100) #TODO 100000
+                               salt.encode('utf-8'), 1000)
     return binascii.hexlify(bin_hash).decode('utf-8')[0:32]
 
 def get_image_folder_names(row, img_in_dir):
@@ -61,8 +82,8 @@ def get_image_folder_names(row, img_in_dir):
     return glob.glob(pattern)
 
 def create_output_df(data):
-    return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'Final_diagnosis',
-                    'muscle', 'side', 'z_score', 'h_score', 'image_file'], data=data)
+    return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length',
+                    'diagnosis', 'muscle', 'side', 'z_score', 'h_score', 'image_file'], data=data)
 
 def get_output_row(row_in, muscle, side, image_file):
     """ Combines data from
@@ -85,9 +106,17 @@ def get_output_row(row_in, muscle, side, image_file):
     if pd.isna(z_score) or pd.isna(h_score):
         raise Exception("Missing z/h-score")
     
+    # Diagnosis
+    diagnosis = -1
+    if "Diagnosis_categorized_step_1" in row_in:
+        diagnosis = int(row_in['Diagnosis_categorized_step_1'])
+    if "Diagnosis_categorized" in row_in:
+        diagnosis = diagnosis_mapping[int(row_in['Diagnosis_categorized'])]
+    
     # Copy data
-    anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length', 'Final_diagnosis']
+    anon_columns = ['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length']
     row_out = row_in[anon_columns].to_dict()
+    row_out['diagnosis'] = diagnosis
     row_out['muscle'] = muscle_abbrev
     row_out['side'] = side
     row_out['z_score'] = z_score
