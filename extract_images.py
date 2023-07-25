@@ -5,6 +5,7 @@
 import pydicom
 from pydicom.pixel_data_handlers.util import convert_color_space
 import cv2
+import numpy as np
 
 
 def convert_image(file_in, file_out):
@@ -32,16 +33,25 @@ def convert_image(file_in, file_out):
         y1 = get_value_from_sequence(item, (0x0018, 0x601e)) # Region Location Min Y1 
     
     # Tighten crop region (clip off as much burnt-in annotations as possible)
-    x0 += 51
-    y0 += 8
-    x1 -= 52
+    x0 += 0
+    y0 += 0
+    x1 -= 32
     y1 -= 65
    
-    # crop image to region
-    img_cropped = img_gray[y0:y1, x0:x1]
+    # Crop image to region
+    img_crop1 = img_gray[y0:y1, x0:x1]
+
+    # Crop black borders and burnt-in logo
+    threshold = 10
+    rows = np.where(np.mean(img_crop1, 0) > threshold)[0]
+    if rows.size:
+        cols = np.where(np.mean(img_crop1, 1) > threshold)[0]
+        img_crop2 = img_crop1[cols[0]: cols[-1] + 1, rows[0]: rows[-1] + 1]
+    else:
+        img_crop2 = img_crop1[:1, :1]
     
     # write image
-    cv2.imwrite(file_out, img_cropped)
+    cv2.imwrite(file_out, img_crop2)
 
 def get_value_from_sequence(item, tag):
     data = item.get(tag)
