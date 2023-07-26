@@ -92,6 +92,12 @@ def get_output_row(row_in, muscle, side, image_file):
         * the file name of the image being written
         * the H and z score for the selected muscle
     """
+    # Discard entries with possibly identifying properties
+    if row_in['Length'] >= 2.0:
+        raise Exception("High length")
+    if row_in['Weight'] >= 150.0:
+        raise Exception("High weight")
+
     # Map muscle name
     muscle_abbrev = mapping.get(muscle)
     if muscle_abbrev == None:
