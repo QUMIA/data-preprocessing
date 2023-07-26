@@ -76,7 +76,6 @@ def main():
         file_list = glob.glob(os.path.join(visit_img_dir, "roi", "*.dcm.mat"))
         file_list.sort()
         image_index = 0
-        did_process_entry = False
         for f in file_list:
             # Get data from .mat
             mat = scipy.io.loadmat(f)
@@ -100,7 +99,6 @@ def main():
                 # Add to output data
                 output_rows.append(row_out)
                 unique_patients.add(patient_id)
-                did_process_entry = True
                 
                 # Convert the image
                 file_name = os.path.split(f)[1]
@@ -113,8 +111,12 @@ def main():
                 missing_muscles.add(muscle)
                 count_missing_muscles += 1
         
-        if did_process_entry:
+        if image_index > 0:
             count_exams += 1
+        else:
+            # Visit dir will be empty, so remove it
+            if len(os.listdir(visit_out_dir)) == 0:
+                os.rmdir(visit_out_dir)
     
     print(f"Couldn't find images for {no_images_count} of {index} entries")
     print(f"Ambiguous image folders for {count_ambiguous_image_folders} entries")
