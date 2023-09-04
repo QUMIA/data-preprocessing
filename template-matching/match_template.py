@@ -4,6 +4,7 @@ import os
 files = [
     ('template_LI.png', 'mask_LI.png'),
     ('template_RE.png', 'mask_RE.png'),
+    ('template_ID.png', 'mask_ID.png'),
     ('template_marker.png', 'mask_marker.png')]
 
 # Load the template and search image
@@ -11,11 +12,12 @@ templates = [(
     cv2.imread(template_file, cv2.IMREAD_GRAYSCALE),
     cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)) for template_file, mask_file in files]
 
-file_list = os.listdir('data')
+file_list = os.listdir('../../data')
 file_list.sort()
 for file_name in file_list:
-    search_img = cv2.imread(f"data/{file_name}", cv2.IMREAD_GRAYSCALE)
+    search_img = cv2.imread(f"../../data/{file_name}", cv2.IMREAD_GRAYSCALE)
     results = []
+    coords = []
 
     for template_img, mask_img in templates:
         # Perform template matching with the mask
@@ -29,9 +31,12 @@ for file_name in file_list:
 
         # Check if the maximum value (match) is above the threshold
         #print(f"File: {file_name}, {[min_val, max_val, min_loc, max_loc]}, {min_val < threshold}")
-        
+
+        if min_val < threshold:
+            coords.append(min_loc)
+
         results.append(min_val < threshold)
 
-    print(f"File: {file_name}, {results}")
+    print(f"File: {file_name}, {results}, {coords}, {search_img.shape}")
     # RE 9-20,
     # LI 21-41
