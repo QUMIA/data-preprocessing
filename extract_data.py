@@ -83,7 +83,7 @@ def get_image_folder_names(row, img_in_dir):
 
 def create_output_df(data):
     return pd.DataFrame(columns=['anon_id', 'exam_id', 'Age_exam', 'Sex', 'Weight', 'Length',
-                    'diagnosis', 'muscle', 'side', 'z_score', 'h_score', 'image_file'], data=data)
+                    'diagnosis', 'muscle', 'side', 'z_score', 'h_score', 'image_file', 'has_print'], data=data)
 
 def get_output_row(row_in, muscle, side, image_file):
     """ Combines data from

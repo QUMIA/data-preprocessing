@@ -37,10 +37,11 @@ def main():
     count_skipped = 0
     count_images_converted = 0
     count_exams = 0
+    count_with_print = 0
     
     # Loop through all entries to process
     for index, row_in in df.iterrows():
-        # if index >= 100: break # For development, limit the number of entries processed
+        #if index != 56: continue # For development, limit the number of entries processed
         print("Processing entry", index)
         
         # Check for possible ambiguity
@@ -70,7 +71,7 @@ def main():
         else:
             # Don't re-process images when output exists (but do output entries to csv)
             count_skipped += 1
-            do_skip_img_convert = True
+            do_skip_img_convert = False ###
 
         # Loop through all images by looking at the .mat files in de /roi folder
         file_list = glob.glob(os.path.join(visit_img_dir, "roi", "*.dcm.mat"))
@@ -81,6 +82,8 @@ def main():
             mat = scipy.io.loadmat(f)
             muscle = mat['muscle'][0]
             side = mat['side'][0]
+            
+            #print(f, muscle, side)
             
             output_image_file = f"{str(image_index).zfill(2)}.png"
             
@@ -95,18 +98,27 @@ def main():
             # Check if the muscle was found in SPSS data
             if row_out != None:
                 image_index += 1
-
-                # Add to output data
+                has_print = False
+                
+                try:
+                    # Convert the image
+                    file_name = os.path.split(f)[1]
+                    file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
+                    file_out = os.path.join(visit_out_dir, output_image_file)
+                    has_print = convert_image(file_in, file_out, not do_skip_img_convert)
+                    if has_print:
+                        count_with_print += 1
+                    count_images_converted += 1
+                except Exception as e:
+                    print(f"ERROR: {e} while processing {patient_id} {muscle} {side} {f}")
+                    count_errors += 1
+                    continue
+                        
+                # Add to output data (only when converting image was successful)
+                row_out['has_print'] = has_print
                 output_rows.append(row_out)
                 unique_patients.add(patient_id)
                 
-                # Convert the image
-                file_name = os.path.split(f)[1]
-                file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
-                file_out = os.path.join(visit_out_dir, output_image_file)
-                if not do_skip_img_convert:
-                    convert_image(file_in, file_out)
-                    count_images_converted += 1
             else:
                 missing_muscles.add(muscle)
                 count_missing_muscles += 1
@@ -124,6 +136,7 @@ def main():
     print(f"Found {count_ambiguous_entries} ambiguous entries in table (without exam date)")
     print(f"{count_errors} errors found extracting table data")
     print(f"{count_skipped} exams skipped because output exists")
+    print(f"{count_with_print} images found with burnt-in print")
     print(f"{count_images_converted} images converted")
     print(f"Entry count: {len(output_rows)} muscles for {count_exams} exams, {len(unique_patients)} patients")
     
