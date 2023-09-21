@@ -8,6 +8,7 @@ load_dotenv()  # take environment variables from .env.
 import os
 import glob
 import scipy.io
+from tqdm import tqdm
 from extract_data import read_file, create_output_df, get_output_row, get_image_folder_names
 from extract_images import convert_image
 
@@ -40,7 +41,7 @@ def main():
     count_with_print = 0
     
     # Loop through all entries to process
-    for index, row_in in df.iterrows():
+    for index, row_in in tqdm(df.iterrows(), total=df.shape[0]):
         #if index != 56: continue # For development, limit the number of entries processed
         print("Processing entry", index)
         
