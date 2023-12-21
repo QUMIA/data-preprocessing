@@ -65,6 +65,10 @@ def read_file(path, salt):
         if 'Date_exam' in row
         else row['anon_id'], axis=1)
     
+    # Scale length from cm to meters if needed
+    if df['Length'].mean() > 10:
+        df['Length'] = df['Length'] / 100
+
     return df
 
 def pseudonymize_id(patient_id, salt):
