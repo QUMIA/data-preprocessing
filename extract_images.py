@@ -19,7 +19,7 @@ read_file = lambda x: cv2.imread(os.path.join('template-matching', x), cv2.IMREA
 template_imgs = [(read_file(item[0]), read_file(item[1])) for item in files]
 
                   
-def convert_image(file_in, file_out, do_write):
+def convert_image(file_in, file_out, row_out, do_write):
     
     # read dicom image
     ds = pydicom.read_file(file_in)
@@ -66,26 +66,15 @@ def convert_image(file_in, file_out, do_write):
     tm_result_markers = find_template(img_crop2, template_imgs[3])
 
     # Crop depending on result
-    has_burnt_in_print = tm_result_markers[0]
-    if not has_burnt_in_print:
-        height = img_crop2.shape[1]
-        y1 = -1
-        if tm_result_li[0]:
-            y1 = tm_result_li[1][1]
-        if tm_result_re[0]:
-            y1 = tm_result_re[1][1]
-        if tm_result_id[0]:
-            y1 = tm_result_id[1][1]
-        if y1 > -1 and height - y1 < 120: # prevent cropping too much
-            img_crop2 = img_crop2[0:y1, :]
-        else:
-            has_burnt_in_print = True
-        
+    has_markers = tm_result_markers[0]
+    row_out['has_markers'] = has_markers
+    row_out['li_x'], row_out['li_y'] = tm_result_li[1] if tm_result_li[0] else (-1, -1)
+    row_out['re_x'], row_out['re_y'] = tm_result_re[1] if tm_result_re[0] else (-1, -1)
+    row_out['id_x'], row_out['id_y'] = tm_result_id[1] if tm_result_id[0] else (-1, -1)
+
     # write image
     if do_write:
         cv2.imwrite(file_out, img_crop2)
-
-    return has_burnt_in_print
 
 
 def find_template(search_img, template_img_pair):

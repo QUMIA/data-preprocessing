@@ -42,7 +42,7 @@ def main():
     
     # Loop through all entries to process
     for index, row_in in tqdm(df.iterrows(), total=df.shape[0]):
-        #if index != 56: continue # For development, limit the number of entries processed
+        #if index > 20: continue # For development, limit the number of entries processed
         print("Processing entry", index)
         
         # Check for possible ambiguity
@@ -99,15 +99,14 @@ def main():
             # Check if the muscle was found in SPSS data
             if row_out != None:
                 image_index += 1
-                has_print = False
                 
                 try:
                     # Convert the image
                     file_name = os.path.split(f)[1]
                     file_in = os.path.join(visit_img_dir, file_name.replace('.dcm.mat', '.dcm'))
                     file_out = os.path.join(visit_out_dir, output_image_file)
-                    has_print = convert_image(file_in, file_out, not do_skip_img_convert)
-                    if has_print:
+                    convert_image(file_in, file_out, row_out, not do_skip_img_convert)
+                    if row_out['has_markers']:
                         count_with_print += 1
                     count_images_converted += 1
                 except Exception as e:
@@ -116,7 +115,6 @@ def main():
                     continue
                         
                 # Add to output data (only when converting image was successful)
-                row_out['has_print'] = has_print
                 output_rows.append(row_out)
                 unique_patients.add(patient_id)
                 
