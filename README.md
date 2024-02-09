@@ -1,6 +1,14 @@
 # data-preprocessing
 
-This repo contains a script that finds, processes and psuedonymizes the data.
+This repo contains a script that finds, processes and psuedonymizes the data for the QUMIA project.
+The project as a whole uses ultrasound data from patients who may have various neurological diseases,
+and explores computational models for diagnosis and classification.
+
+As every hospital system will have multiple ways in which such data is stored, thus
+programs in this particular repository are not meant to be generalizable. Work on machine learning models 
+for diagnosis and classification based on patient data including ultrasounds
+is held in a different repository. If you are interested in applying this kind of analysis or
+collaborating with us please contact Candace Makeda Moore at c.moore@esciencecenter.nl . 
 
 ## Dependencies
 
