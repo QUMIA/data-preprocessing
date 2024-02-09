@@ -1,3 +1,6 @@
+<p align="center">
+    <img style="width: 35%; height: 35%" src="quimia4abc.svg">
+</p>
 # data-preprocessing
 
 This repo contains a script that finds, processes and psuedonymizes the data for the QUMIA project.
